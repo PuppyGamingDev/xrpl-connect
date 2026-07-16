@@ -26,6 +26,7 @@ export { WalletConnectAdapter } from '../../adapters/walletconnect';
 export { LedgerAdapter } from '../../adapters/ledger';
 export { XyraAdapter } from '../../adapters/xyra';
 export { OtsuAdapter } from '../../adapters/otsu';
+export { JoeyAdapter } from '../../adapters/joey';
 
 // Convenient grouped exports for better DX
 import { XamanAdapter } from '../../adapters/xaman';
@@ -35,6 +36,7 @@ import { WalletConnectAdapter } from '../../adapters/walletconnect';
 import { LedgerAdapter } from '../../adapters/ledger';
 import { XyraAdapter } from '../../adapters/xyra';
 import { OtsuAdapter } from '../../adapters/otsu';
+import { JoeyAdapter } from '../../adapters/joey';
 
 export const Adapters = {
   Xaman: XamanAdapter,
@@ -44,4 +46,5 @@ export const Adapters = {
   Ledger: LedgerAdapter,
   Xyra: XyraAdapter,
   Otsu: OtsuAdapter,
+  Joey: JoeyAdapter,
 };

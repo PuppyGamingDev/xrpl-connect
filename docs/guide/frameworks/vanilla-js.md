@@ -171,6 +171,14 @@ async function signMessage() {
 }
 ```
 
+> **Note:** Joey Wallet doesn't support `signMessage`. Its documented XRPL
+> methods are all transaction-signing calls, with no message-signing
+> equivalent, so `JoeyAdapter.signMessage()` always rejects with a
+> `WalletErrorCode.UNSUPPORTED_METHOD` error. If your app relies on
+> `signMessage` (e.g. sign-in-with-wallet flows), catch this case and either
+> hide the option for Joey or fall back to a wallet that supports it (Xaman,
+> Crossmark, GemWallet).
+
 ## Checking Connection Status
 
 Check if a wallet is connected and access account information:
@@ -200,6 +208,7 @@ import {
   WalletConnectAdapter,
   GemWalletAdapter,
   CrossmarkAdapter,
+  JoeyAdapter,
 } from 'xrpl-connect';
 
 const walletManager = new WalletManager({
@@ -208,13 +217,14 @@ const walletManager = new WalletManager({
     new CrossmarkAdapter(),
     new GemWalletAdapter(),
     new WalletConnectAdapter({ projectId: 'YOUR_PROJECT_ID' }),
+    new JoeyAdapter({ projectId: 'YOUR_WALLETCONNECT_PROJECT_ID' }),
   ],
   network: 'testnet',
   autoConnect: true,
 });
 ```
 
-Now users will see all four wallets in the connection modal!
+Now users will see all five wallets in the connection modal! Joey shows up as its own entry with its own icon - connecting through it targets Joey directly (deep-linking on mobile, a Joey-specific QR code on desktop), rather than opening a generic multi-wallet WalletConnect picker.
 
 ## Error Handling
 

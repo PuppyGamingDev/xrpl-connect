@@ -34,6 +34,7 @@ xrpl-connect/
 │   │   ├── ledger/              # Ledger hardware wallet adapter (reference)
 │   │   ├── xyra/                # Xyra adapter (reference)
 │   │   ├── otsu/                # Otsu adapter (reference)
+│   │   ├── joey/                # Joey Wallet adapter (reference)
 │   │   └── README.md            # Adapter documentation
 │   └── xrpl-connect/            # Meta package (exports all adapters)
 └── docs/                        # Documentation (this file)

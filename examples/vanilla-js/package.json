@@ -16,6 +16,7 @@
     "@xrpl-connect/adapter-xaman": "workspace:*",
     "@xrpl-connect/adapter-xyra": "workspace:*",
     "@xrpl-connect/adapter-otsu": "workspace:*",
+    "@xrpl-connect/adapter-joey": "workspace:*",
     "@xrpl-connect/core": "workspace:*",
     "@xrpl-connect/ui": "workspace:*",
     "xrpl": "^4.0.0"

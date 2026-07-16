@@ -324,6 +324,29 @@ const adapter = new OtsuAdapter();
 
 **Supported Features:** Transaction signing, message signing
 
+### Joey Adapter
+
+```typescript
+import { JoeyAdapter } from 'xrpl-connect';
+
+const adapter = new JoeyAdapter({
+  projectId: 'YOUR_WALLETCONNECT_PROJECT_ID', // Get from https://cloud.reown.com
+  // Optional
+  // metadata: { name: 'My App', description: '...', url: '...', icons: [] },
+});
+```
+
+Joey Wallet is WalletConnect-based, integrated via Joey's own SDK
+(`@joey-wallet/wc-client`) so it targets Joey directly - deep-linking on
+mobile, a Joey-specific QR code on desktop - instead of opening a generic
+multi-wallet WalletConnect picker.
+
+**Supported Features:** Transaction signing. **Not supported:** message
+signing (`signMessage()` rejects with `WalletErrorCode.UNSUPPORTED_METHOD` -
+Joey's SDK has no message-signing method).
+
+**Get Project ID:** [https://cloud.reown.com/](https://cloud.reown.com/)
+
 ## Types & Interfaces
 
 ### AccountInfo

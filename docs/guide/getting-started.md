@@ -30,7 +30,7 @@ The `xrpl-connect` package includes:
 
 - **Core** - WalletManager, event system, and state management
 - **UI** - Beautiful web component for wallet connection
-- **Adapters** - Built-in support for Xaman, Crossmark, GemWallet, WalletConnect, Ledger hardware wallets, Xyra, and Otsu
+- **Adapters** - Built-in support for Xaman, Crossmark, GemWallet, WalletConnect, Ledger hardware wallets, Xyra, Otsu, and Joey Wallet
 
 > **Note:** The `xrpl` package is required for transaction types and utilities.
 
@@ -68,6 +68,26 @@ const adapter = new WalletConnectAdapter({
   projectId: 'YOUR_PROJECT_ID',
 });
 ```
+
+### Joey Wallet Project ID
+
+Joey Wallet is WalletConnect-based, so it also needs a WalletConnect / Reown
+project ID:
+
+1. Go to [https://cloud.reown.com/](https://cloud.reown.com/)
+2. Create a new project
+3. Copy your `Project ID`
+4. Use it when creating the JoeyAdapter
+
+```javascript
+const adapter = new JoeyAdapter({
+  projectId: 'YOUR_PROJECT_ID',
+});
+```
+
+> **Note:** Joey doesn't support `signMessage()` - it rejects with a
+> `WalletErrorCode.UNSUPPORTED_METHOD` error, since Joey's SDK only exposes
+> transaction-signing methods.
 
 ### Other Adapters
 

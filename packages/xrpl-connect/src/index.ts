@@ -29,6 +29,7 @@ export { WalletConnectAdapter } from '@xrpl-connect/adapter-walletconnect';
 export { LedgerAdapter } from '@xrpl-connect/adapter-ledger';
 export { XyraAdapter } from '@xrpl-connect/adapter-xyra';
 export { OtsuAdapter } from '@xrpl-connect/adapter-otsu';
+export { JoeyAdapter } from '@xrpl-connect/adapter-joey';
 
 // Convenient grouped exports for better DX
 import { XamanAdapter } from '@xrpl-connect/adapter-xaman';
@@ -38,6 +39,7 @@ import { WalletConnectAdapter } from '@xrpl-connect/adapter-walletconnect';
 import { LedgerAdapter } from '@xrpl-connect/adapter-ledger';
 import { XyraAdapter } from '@xrpl-connect/adapter-xyra';
 import { OtsuAdapter } from '@xrpl-connect/adapter-otsu';
+import { JoeyAdapter } from '@xrpl-connect/adapter-joey';
 
 /**
  * Convenient object containing all wallet adapters
@@ -62,4 +64,5 @@ export const Adapters = {
   Ledger: LedgerAdapter,
   Xyra: XyraAdapter,
   Otsu: OtsuAdapter,
+  Joey: JoeyAdapter,
 };

@@ -175,6 +175,18 @@ const adapter = new OtsuAdapter();
 
 **Features:** Transaction signing, message signing, no API keys required
 
+#### Joey Adapter
+
+Connect to Joey Wallet, a WalletConnect-based XRPL wallet, via Joey's own SDK. Unlike the generic `WalletConnectAdapter`, it targets Joey directly - deep-linking on mobile, a Joey-specific QR code on desktop - instead of opening a multi-wallet picker.
+
+```javascript
+import { JoeyAdapter } from 'xrpl-connect';
+
+const adapter = new JoeyAdapter({ projectId: 'YOUR_PROJECT_ID' });
+```
+
+**Features:** Transaction signing. **Not supported:** message signing (rejects with `WalletErrorCode.UNSUPPORTED_METHOD`)
+
 ### Creating Multiple Adapters
 
 It's common to create a WalletManager with multiple adapters to give users choice:
@@ -186,6 +198,7 @@ const walletManager = new WalletManager({
     new CrossmarkAdapter(),
     new GemWalletAdapter(),
     new WalletConnectAdapter({ projectId: 'YOUR_PROJECT_ID' }),
+    new JoeyAdapter({ projectId: 'YOUR_PROJECT_ID' }),
   ],
   network: 'testnet',
 });

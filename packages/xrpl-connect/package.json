@@ -23,6 +23,7 @@
     "ledger",
     "xyra",
     "otsu",
+    "joey",
     "wallet-adapter",
     "wallet-connection",
     "web-component",
@@ -59,6 +60,7 @@
     "@xrpl-connect/adapter-xaman": "workspace:*",
     "@xrpl-connect/adapter-otsu": "workspace:*",
     "@xrpl-connect/adapter-xyra": "workspace:*",
+    "@xrpl-connect/adapter-joey": "workspace:*",
     "@xrpl-connect/core": "workspace:*",
     "@xrpl-connect/ui": "workspace:*"
   },

@@ -177,6 +177,7 @@ import {
   CrossmarkAdapter,
   GemWalletAdapter,
   LedgerAdapter,
+  JoeyAdapter,
 } from 'xrpl-connect';
 import { useWallet } from '../context/WalletContext';
 
@@ -195,6 +196,7 @@ export function useWalletManager() {
         new CrossmarkAdapter(),
         new GemWalletAdapter(),
         new LedgerAdapter(), // Hardware wallet support
+        new JoeyAdapter({ projectId: WALLETCONNECT_PROJECT_ID }),
       ],
       network: 'testnet',
       autoConnect: true,

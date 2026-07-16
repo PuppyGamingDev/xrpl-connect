@@ -7,9 +7,9 @@ import { GemWalletAdapter } from '@xrpl-connect/adapter-gemwallet';
 import { LedgerAdapter } from '@xrpl-connect/adapter-ledger';
 import { XyraAdapter } from '@xrpl-connect/adapter-xyra';
 import { OtsuAdapter } from '@xrpl-connect/adapter-otsu';
+import { JoeyAdapter } from '@xrpl-connect/adapter-joey';
 import { WalletConnectorElement } from '@xrpl-connect/ui';
 import '@xrpl-connect/ui'; // Register the web component
-
 
 // Configuration - ADD YOUR API KEYS HERE
 const XAMAN_API_KEY = '15ba80a8-cba2-4789-a45b-c6a850d9d91b'; // Get from https://apps.xumm.dev/
@@ -38,6 +38,9 @@ const walletManager = new WalletManager({
     new LedgerAdapter(),
     new XyraAdapter(),
     new OtsuAdapter(),
+    // Joey Wallet: WalletConnect-based, targets Joey directly (own icon,
+    // own QR/deeplink) instead of the generic WalletConnect picker above.
+    new JoeyAdapter({ projectId: WALLETCONNECT_PROJECT_ID }),
   ],
   network: 'testnet',
   autoConnect: true,

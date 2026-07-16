@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- New `@xrpl-connect/adapter-joey` adapter for Joey Wallet. Joey is WalletConnect-based, but connects via Joey's own SDK (`@joey-wallet/wc-client`) so it targets Joey directly through the SDK's `generate()` action - deep-linking straight into the Joey app on mobile, and rendering a Joey-specific QR code on desktop - rather than opening the generic multi-wallet WalletConnect picker. `JoeyAdapter.signMessage()` throws `WalletErrorCode.UNSUPPORTED_METHOD`, since Joey's SDK only exposes transaction-signing methods, with no message-signing equivalent. `packages/ui`'s `WalletService` gained a dedicated `joey` connection branch (mirroring the existing `walletconnect` one) so `<xrpl-wallet-connector>` renders Joey's QR/deeplink flow out of the box.
+
 ### Fixed
 
 - Adapters (`@xrpl-connect/adapter-walletconnect`): `sign()` and `signAndSubmit()` no longer report `TxnSignature` as `tx_blob`. `TxnSignature` is a raw signature, not a serialized transaction blob — reporting it as `tx_blob` broke any `sign()`-then-submit-yourself flow (e.g. multi-party transactions needing a second cosigner) even though it went unnoticed in `signAndSubmit()`, since the wallet submits directly there. Both methods now return the full signed `tx_json` (with `SigningPubKey`/`TxnSignature`) and the raw signature under `SignedTransaction`'s existing `signature` field; `tx_blob` is only set when the wallet actually provides one (#103).

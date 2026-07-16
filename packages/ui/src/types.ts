@@ -41,6 +41,16 @@ export type WalletConnectConnectOptions = {
   [key: string]: unknown;
 };
 
+/**
+ * Joey-specific connect options. Same shape as `WalletConnectConnectOptions`
+ * (Joey is WalletConnect-based too) - kept as its own type since the two
+ * adapters' option bags are independent, not because the shape differs.
+ */
+export type JoeyConnectOptions = {
+  onQRCode?: (uri: string) => void;
+  [key: string]: unknown;
+};
+
 export interface QRCodeData {
   walletId: string;
   uri: string;

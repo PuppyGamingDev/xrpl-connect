@@ -5,6 +5,7 @@ import { TIMINGS, ERROR_CODES } from '../constants';
 import {
   isModalConfigurableAdapter,
   isMultiAccountAdapter,
+  type JoeyConnectOptions,
   type LedgerConnectOptions,
   type WalletConnectConnectOptions,
   type WalletConnectorContext,
@@ -131,6 +132,33 @@ export class WalletService {
 
         // Show account selection view
         this.component.showAccountSelectionView(walletId, wallet.name, wallet.icon, accounts);
+      } else if (walletId === 'joey') {
+        // Joey targets its own wallet directly via the SDK's `generate()`
+        // action, so it never opens a generic multi-wallet WalletConnect
+        // modal. On mobile the adapter deep-links straight into the Joey
+        // app; on desktop it surfaces the pairing URI the same way the
+        // WalletConnect adapter does, so we show the QR view and forward
+        // an onQRCode callback.
+        if (isMobile()) {
+          this.component.showLoadingView(walletId, wallet.name, wallet.icon);
+          this.component.dispatchEvent(new CustomEvent('connecting', { detail: { walletId } }));
+          await this.walletManager.connect(walletId, options);
+          this.component.dispatchEvent(new CustomEvent('connected', { detail: { walletId } }));
+        } else {
+          this.component.showQRCodeView(walletId);
+
+          const connectOptions: ConnectOptions<JoeyConnectOptions> = {
+            ...options,
+            onQRCode: (uri: string) => {
+              logger.debug('Joey QR code callback received:', uri.substring(0, 50) + '...');
+              this.component.setQRCode(walletId, uri);
+            },
+          };
+
+          this.component.dispatchEvent(new CustomEvent('connecting', { detail: { walletId } }));
+          await this.walletManager.connect(walletId, connectOptions);
+          this.component.dispatchEvent(new CustomEvent('connected', { detail: { walletId } }));
+        }
       } else {
         // For extension wallets, check availability first
         const isAvailable = await wallet.isAvailable();
