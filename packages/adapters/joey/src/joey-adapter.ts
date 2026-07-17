@@ -142,6 +142,22 @@ export class JoeyAdapter implements WalletAdapter {
       const rawProvider = (await wcProvider.head()) as unknown as JoeyRawProvider;
       this.rawProvider = rawProvider;
 
+      // WalletConnect's underlying provider auto-restores a previously
+      // approved session from persisted storage as part of initializing
+      // above. If one exists, generateConnectionDetails() below would just
+      // reuse it - silently keeping whichever chain that old session was
+      // approved for instead of pairing fresh for the chain we actually
+      // want. Clear it first so every connect() negotiates the requested
+      // network from scratch.
+      if (rawProvider.session) {
+        logger.debug('Clearing a pre-existing Joey session before reconnecting');
+        try {
+          await rawProvider.disconnect();
+        } catch (error) {
+          logger.debug('Failed to clear the pre-existing Joey session:', error);
+        }
+      }
+
       const chainId = network.walletConnectId || `xrpl:${network.id}`;
 
       const generated = await wcProvider.generateConnectionDetails({

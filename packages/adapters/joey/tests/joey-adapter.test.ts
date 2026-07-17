@@ -56,6 +56,21 @@ function failsImmediately(error: Error) {
   });
 }
 
+/**
+ * Simulates a fresh approval landing with the given session, replacing
+ * whatever `mockRawProvider.session` held beforehand (e.g. a stale,
+ * pre-existing one) - the way a real pairing replaces the provider's
+ * session once the user approves.
+ */
+function connectsWithSession(session: NonNullable<(typeof mockRawProvider)['session']>) {
+  mockRawProvider.on.mockImplementation((event: string, cb: (...args: unknown[]) => void) => {
+    if (event === 'connect') {
+      mockRawProvider.session = session;
+      cb();
+    }
+  });
+}
+
 beforeEach(() => {
   ProviderMock.mockClear();
   configBuilderMock.mockClear();
@@ -145,6 +160,33 @@ describe('JoeyAdapter.connect', () => {
     expect(signTransactionMock).toHaveBeenCalledWith(
       expect.objectContaining({ chainId: 'xrpl:0' })
     );
+  });
+
+  it('clears a pre-existing session before pairing, so a stale mainnet session cannot leak into a fresh testnet connect', async () => {
+    // WalletConnect's provider auto-restores a previously approved session
+    // (e.g. from an earlier mainnet connection) as part of initializing.
+    // Without clearing it first, generateConnectionDetails() would just
+    // reuse that stale session instead of negotiating the newly requested
+    // network.
+    mockRawProvider.session = {
+      topic: 'stale-mainnet-topic',
+      namespaces: { xrpl: { accounts: ['xrpl:0:rStaleMainnetAddress'] } },
+    };
+    mockWcProviderInstance.generateConnectionDetails.mockResolvedValue({
+      data: { uri: 'wc:example', deeplink: 'joey://settings/wc?uri=wc:example' },
+      error: null,
+    });
+    connectsWithSession({
+      topic: 'fresh-testnet-topic',
+      namespaces: { xrpl: { accounts: ['xrpl:1:rFreshTestnetAddress'] } },
+    });
+
+    const adapter = new JoeyAdapter({ projectId: 'test-project-id' });
+    const account = await adapter.connect({ network: 'testnet' });
+
+    expect(mockRawProvider.disconnect).toHaveBeenCalled();
+    expect(account.address).toBe('rFreshTestnetAddress');
+    expect(account.network.walletConnectId).toBe('xrpl:1');
   });
 
   it('surfaces the pairing URI via onQRCode on desktop', async () => {
