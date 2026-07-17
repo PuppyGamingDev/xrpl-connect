@@ -159,6 +159,7 @@ export class JoeyAdapter implements WalletAdapter {
       }
 
       const chainId = network.walletConnectId || `xrpl:${network.id}`;
+      logger.info(`Requesting Joey connection for chain ${chainId} (network: ${network.id})`);
 
       const generated = await wcProvider.generateConnectionDetails({
         walletId: core.constants.wallets.joey.projectId,
@@ -197,6 +198,7 @@ export class JoeyAdapter implements WalletAdapter {
       });
 
       const accounts = rawProvider.session?.namespaces?.xrpl?.accounts ?? [];
+      logger.info(`Joey session namespaces:`, rawProvider.session?.namespaces);
       if (accounts.length === 0) {
         throw new Error('No accounts returned from Joey Wallet session');
       }
@@ -212,6 +214,12 @@ export class JoeyAdapter implements WalletAdapter {
       const approvedNetwork =
         Object.values(STANDARD_NETWORKS).find((n) => n.walletConnectId === approvedChainId) ??
         network;
+
+      if (approvedChainId !== chainId) {
+        logger.warn(
+          `Joey approved chain ${approvedChainId} but ${chainId} was requested - using the approved chain.`
+        );
+      }
 
       this.currentAccount = { address, network: approvedNetwork };
       this.setupEventListeners();
