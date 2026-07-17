@@ -77,6 +77,18 @@ console.log('Transaction hash:', result.hash);
 | `projectId` | `string` | Yes      | WalletConnect / Reown Cloud project ID for _your_ app                  |
 | `metadata`  | `object` | No       | App metadata (`name`, `description`, `url`, `icons`) shown inside Joey |
 
+> **Use a dedicated project ID for Joey.** If your app also uses
+> `@xrpl-connect/adapter-walletconnect` (or any other independent
+> WalletConnect client), **do not reuse the same `projectId`** for both.
+> Joey's SDK builds its own internal WalletConnect client, and WalletConnect
+> maintains one "Core" (relay connection + session storage) per project ID.
+> Two independent clients sharing a project ID collide over that same Core -
+> you'll see a "WalletConnect Core is already initialized" console warning,
+> and connections can silently negotiate the wrong network or pick up a
+> stale session instead of the one you just approved. Get a second (free)
+> project ID from [cloud.reown.com](https://cloud.reown.com) for
+> `JoeyAdapter` specifically.
+
 ## Limitation: `signMessage` is not supported
 
 Joey's documented XRPL methods (`xrpl_signTransaction`,

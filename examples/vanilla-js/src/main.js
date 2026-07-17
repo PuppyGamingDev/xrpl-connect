@@ -15,6 +15,27 @@ import '@xrpl-connect/ui'; // Register the web component
 const XAMAN_API_KEY = '15ba80a8-cba2-4789-a45b-c6a850d9d91b'; // Get from https://apps.xumm.dev/
 const WALLETCONNECT_PROJECT_ID = '32798b46e13dfb0049706a524cf132d6'; // Get from https://cloud.walletconnect.com
 
+// IMPORTANT: Joey Wallet needs its OWN WalletConnect/Reown project ID,
+// separate from WALLETCONNECT_PROJECT_ID above. WalletConnectAdapter and
+// JoeyAdapter each spin up their own independent WalletConnect client
+// (Joey's SDK builds its own internally), and WalletConnect's "Core" is a
+// global singleton keyed by project ID - two independent clients sharing
+// one project ID collide over the same relay/session storage. You'll see
+// "WalletConnect Core is already initialized... Init() was called N times"
+// in the console, and connections can silently land on the wrong network
+// or a stale session (this is why Joey connections were sticking to
+// mainnet regardless of WalletManager's configured network). Get a second
+// (free) project ID from https://cloud.reown.com and put it here.
+const JOEY_WALLETCONNECT_PROJECT_ID = WALLETCONNECT_PROJECT_ID; // TODO: replace with your own
+if (JOEY_WALLETCONNECT_PROJECT_ID === WALLETCONNECT_PROJECT_ID) {
+  console.warn(
+    'JOEY_WALLETCONNECT_PROJECT_ID is reusing WALLETCONNECT_PROJECT_ID. ' +
+      'Joey Wallet needs its own project ID (see the comment above this warning) ' +
+      "or its WalletConnect client will collide with WalletConnectAdapter's, " +
+      'causing lost/misrouted sessions.'
+  );
+}
+
 // Initialize Wallet Manager
 const walletManager = new WalletManager({
   adapters: [
@@ -40,7 +61,8 @@ const walletManager = new WalletManager({
     new OtsuAdapter(),
     // Joey Wallet: WalletConnect-based, targets Joey directly (own icon,
     // own QR/deeplink) instead of the generic WalletConnect picker above.
-    new JoeyAdapter({ projectId: WALLETCONNECT_PROJECT_ID }),
+    // Uses its own project ID - see the comment on JOEY_WALLETCONNECT_PROJECT_ID above.
+    new JoeyAdapter({ projectId: JOEY_WALLETCONNECT_PROJECT_ID }),
   ],
   network: 'testnet',
   autoConnect: true,

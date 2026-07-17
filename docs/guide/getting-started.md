@@ -85,6 +85,16 @@ const adapter = new JoeyAdapter({
 });
 ```
 
+> **Important:** if you're also using `WalletConnectAdapter` (or any other
+> independent WalletConnect client), give `JoeyAdapter` a **different**
+> project ID than the one you used above. Joey's SDK builds its own
+> WalletConnect client internally, and WalletConnect keeps one "Core" (relay
+> connection + session storage) per project ID - two independent clients
+> sharing a project ID collide over that Core, and connections can silently
+> negotiate the wrong network or reuse a stale session. Get a second (free)
+> project ID from [cloud.reown.com](https://cloud.reown.com) for Joey
+> specifically.
+
 > **Note:** Joey doesn't support `signMessage()` - it rejects with a
 > `WalletErrorCode.UNSUPPORTED_METHOD` error, since Joey's SDK only exposes
 > transaction-signing methods.
