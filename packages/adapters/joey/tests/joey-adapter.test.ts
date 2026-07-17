@@ -189,6 +189,35 @@ describe('JoeyAdapter.connect', () => {
     expect(account.network.walletConnectId).toBe('xrpl:1');
   });
 
+  it('reuses an in-flight connect() instead of starting a second, competing pairing', async () => {
+    // Mirrors WalletManager's autoConnect silently reconnecting stored
+    // state (no onQRCode) racing against the user's manual click (with
+    // onQRCode) before the first attempt resolves. Both must land on the
+    // SAME session, and only one pairing should ever be negotiated.
+    mockRawProvider.session = {
+      topic: 'topic-1',
+      namespaces: { xrpl: { accounts: ['xrpl:1:rConcurrentAddress'] } },
+    };
+    mockWcProviderInstance.generateConnectionDetails.mockResolvedValue({
+      data: { uri: 'wc:shared-uri', deeplink: 'joey://settings/wc?uri=wc:shared-uri' },
+      error: null,
+    });
+    connectsImmediately();
+
+    const adapter = new JoeyAdapter({ projectId: 'test-project-id' });
+    const onQRCode = vi.fn();
+
+    const [silentAccount, manualAccount] = await Promise.all([
+      adapter.connect({ network: 'testnet' }),
+      adapter.connect({ network: 'testnet', onQRCode }),
+    ]);
+
+    expect(mockWcProviderInstance.generateConnectionDetails).toHaveBeenCalledTimes(1);
+    expect(onQRCode).toHaveBeenCalledWith('wc:shared-uri');
+    expect(silentAccount).toEqual(manualAccount);
+    expect(silentAccount.address).toBe('rConcurrentAddress');
+  });
+
   it('surfaces the pairing URI via onQRCode on desktop', async () => {
     mockRawProvider.session = {
       topic: 'topic-1',

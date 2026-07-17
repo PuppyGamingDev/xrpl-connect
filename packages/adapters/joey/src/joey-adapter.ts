@@ -74,6 +74,16 @@ export class JoeyAdapter implements WalletAdapter {
   private currentAccount: AccountInfo | null = null;
   private listeners: Map<WalletAdapterEvent, Set<(data: unknown) => void>> = new Map();
 
+  // Guards against overlapping connect() calls - e.g. WalletManager's
+  // autoConnect silently reconnecting stored state in the background while
+  // the user also clicks "Connect" in the UI. Without this, both calls
+  // start independent WalletConnect pairing negotiations on the same
+  // client, and the approval can land on whichever one the user didn't
+  // actually see/scan.
+  private connectingPromise: Promise<AccountInfo> | null = null;
+  private pendingUri: string | null = null;
+  private onQRCodeCallback: ((uri: string) => void) | null = null;
+
   private sessionDeleteHandler: (() => void) | null = null;
   private sessionExpireHandler: (() => void) | null = null;
   private disconnectHandler: (() => void) | null = null;
@@ -125,6 +135,31 @@ export class JoeyAdapter implements WalletAdapter {
    * `walletconnect` adapter uses.
    */
   async connect(options?: ConnectOptions<JoeyConnectOptions>): Promise<AccountInfo> {
+    // A connect() may already be in flight (most commonly WalletManager's
+    // autoConnect silently reconnecting on load). Attach this call's
+    // onQRCode to it - firing immediately with the URI if it's already
+    // available - and reuse the same in-flight pairing instead of starting
+    // a second, competing one.
+    if (options?.onQRCode) {
+      this.onQRCodeCallback = options.onQRCode;
+      if (this.pendingUri) {
+        this.onQRCodeCallback(this.pendingUri);
+      }
+    }
+    if (this.connectingPromise) {
+      logger.debug('Joey connect() already in progress; reusing the in-flight attempt');
+      return this.connectingPromise;
+    }
+
+    this.connectingPromise = this.performConnect(options).finally(() => {
+      this.connectingPromise = null;
+      this.pendingUri = null;
+      this.onQRCodeCallback = null;
+    });
+    return this.connectingPromise;
+  }
+
+  private async performConnect(options?: ConnectOptions<JoeyConnectOptions>): Promise<AccountInfo> {
     if (!this.options.projectId) {
       throw createWalletError.connectionFailed(
         this.name,
@@ -133,8 +168,6 @@ export class JoeyAdapter implements WalletAdapter {
         )
       );
     }
-
-    const onQRCode = options?.onQRCode;
 
     try {
       const network = resolveNetwork(options?.network);
@@ -175,9 +208,15 @@ export class JoeyAdapter implements WalletAdapter {
       if (isMobile()) {
         logger.debug('Deep-linking into Joey Wallet');
         window.location.href = deeplink;
-      } else if (onQRCode) {
-        logger.debug('Surfacing Joey Wallet pairing URI as QR code');
-        onQRCode(uri);
+      } else {
+        // Cache the URI so a later, overlapping connect() call (see
+        // connect() above) can still receive it even though this call
+        // owns the actual pairing.
+        this.pendingUri = uri;
+        if (this.onQRCodeCallback) {
+          logger.debug('Surfacing Joey Wallet pairing URI as QR code');
+          this.onQRCodeCallback(uri);
+        }
       }
 
       await new Promise<void>((resolve, reject) => {
