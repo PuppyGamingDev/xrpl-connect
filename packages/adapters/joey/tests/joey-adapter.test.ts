@@ -115,6 +115,38 @@ describe('JoeyAdapter.connect', () => {
     expect(account.network.id).toBe('mainnet');
   });
 
+  it('trusts the chain the wallet actually approved over the one requested', async () => {
+    // App asks for testnet (default network below), but the session comes
+    // back with an account on mainnet - the adapter must follow the
+    // approved account's chain, not blindly keep the requested network,
+    // or later sign()/signAndSubmit() calls send the wrong chainId and get
+    // rejected by the WalletConnect session validation.
+    mockRawProvider.session = {
+      topic: 'topic-1',
+      namespaces: { xrpl: { accounts: ['xrpl:0:rMainnetAddress'] } },
+    };
+    mockWcProviderInstance.generateConnectionDetails.mockResolvedValue({
+      data: { uri: 'wc:example', deeplink: 'joey://settings/wc?uri=wc:example' },
+      error: null,
+    });
+    connectsImmediately();
+
+    const adapter = new JoeyAdapter({ projectId: 'test-project-id' });
+    const account = await adapter.connect({ network: 'testnet' });
+
+    expect(account.network.id).toBe('mainnet');
+    expect(account.network.walletConnectId).toBe('xrpl:0');
+
+    signTransactionMock.mockResolvedValue({
+      tx_json: { hash: 'HASH', TransactionType: 'Payment', TxnSignature: 'SIG' },
+    });
+    await adapter.sign({ TransactionType: 'Payment' } as Transaction);
+
+    expect(signTransactionMock).toHaveBeenCalledWith(
+      expect.objectContaining({ chainId: 'xrpl:0' })
+    );
+  });
+
   it('surfaces the pairing URI via onQRCode on desktop', async () => {
     mockRawProvider.session = {
       topic: 'topic-1',

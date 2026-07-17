@@ -28,7 +28,13 @@ import type {
   SignedMessage,
   SubmittedTransaction,
 } from '@xrpl-connect/core';
-import { createWalletError, resolveNetwork, createLogger, isMobile } from '@xrpl-connect/core';
+import {
+  createWalletError,
+  resolveNetwork,
+  createLogger,
+  isMobile,
+  STANDARD_NETWORKS,
+} from '@xrpl-connect/core';
 import iconPng from './assets/icon.png';
 import { DEFAULT_METADATA, ACCOUNT_FORMAT } from './constants';
 import type {
@@ -179,9 +185,19 @@ export class JoeyAdapter implements WalletAdapter {
         throw new Error('No accounts returned from Joey Wallet session');
       }
 
-      const address = accounts[0].split(':')[ACCOUNT_FORMAT.ADDRESS_INDEX];
+      // Trust the chain the wallet actually approved (encoded in the CAIP-10
+      // account string) over the one we requested. Joey's `generate()`
+      // namespace negotiation isn't guaranteed 1:1 with `chain` - falling
+      // back to the requested `network` here silently signs against the
+      // wrong chainId and gets rejected by the WalletConnect session as
+      // "Missing or invalid" whenever the two disagree.
+      const [approvedNamespace, approvedChainRef, address] = accounts[0].split(':');
+      const approvedChainId = `${approvedNamespace}:${approvedChainRef}`;
+      const approvedNetwork =
+        Object.values(STANDARD_NETWORKS).find((n) => n.walletConnectId === approvedChainId) ??
+        network;
 
-      this.currentAccount = { address, network };
+      this.currentAccount = { address, network: approvedNetwork };
       this.setupEventListeners();
       this.emit('connect', this.currentAccount);
 
