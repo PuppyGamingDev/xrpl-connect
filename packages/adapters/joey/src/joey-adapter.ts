@@ -88,6 +88,7 @@ export class JoeyAdapter implements WalletAdapter {
   private sessionExpireHandler: (() => void) | null = null;
   private disconnectHandler: (() => void) | null = null;
   private sessionEventHandler: ((payload: unknown) => void) | null = null;
+  private sessionUpdateHandler: (() => void) | null = null;
 
   constructor(options: JoeyAdapterOptions) {
     this.options = options;
@@ -433,11 +434,13 @@ export class JoeyAdapter implements WalletAdapter {
     this.sessionExpireHandler = () => this.handleWalletInitiatedDisconnect();
     this.disconnectHandler = () => this.handleWalletInitiatedDisconnect();
     this.sessionEventHandler = (payload: unknown) => this.handleSessionEvent(payload);
+    this.sessionUpdateHandler = () => this.handleSessionUpdate();
 
     this.rawProvider.on('session_delete', this.sessionDeleteHandler);
     this.rawProvider.on('session_expire', this.sessionExpireHandler);
     this.rawProvider.on('disconnect', this.disconnectHandler);
     this.rawProvider.on('session_event', this.sessionEventHandler);
+    this.rawProvider.on('session_update', this.sessionUpdateHandler);
   }
 
   private removeEventListeners(): void {
@@ -448,11 +451,14 @@ export class JoeyAdapter implements WalletAdapter {
         this.rawProvider.off('session_expire', this.sessionExpireHandler);
       if (this.disconnectHandler) this.rawProvider.off('disconnect', this.disconnectHandler);
       if (this.sessionEventHandler) this.rawProvider.off('session_event', this.sessionEventHandler);
+      if (this.sessionUpdateHandler)
+        this.rawProvider.off('session_update', this.sessionUpdateHandler);
     }
     this.sessionDeleteHandler = null;
     this.sessionExpireHandler = null;
     this.disconnectHandler = null;
     this.sessionEventHandler = null;
+    this.sessionUpdateHandler = null;
   }
 
   private handleWalletInitiatedDisconnect(): void {
@@ -470,6 +476,41 @@ export class JoeyAdapter implements WalletAdapter {
 
     if (nextAddress && nextAddress !== this.currentAccount.address) {
       this.currentAccount = { ...this.currentAccount, address: nextAddress };
+      this.emit('accountChanged', this.currentAccount);
+    }
+  }
+
+  /**
+   * A `session_update` means the wallet re-negotiated the session's own
+   * namespaces in place (e.g. the user switched network inside Joey) -
+   * distinct from `session_event`'s app-level `accountsChanged` signal.
+   * Re-derive the connected account from the CAIP-10 account string the
+   * updated session actually reports, the same way `connect()` does, and
+   * notify listeners if either the network or the address moved.
+   */
+  private handleSessionUpdate(): void {
+    if (!this.currentAccount) return;
+
+    const accounts = this.rawProvider?.session?.namespaces?.xrpl?.accounts ?? [];
+    if (accounts.length === 0) return;
+
+    const [namespace, chainRef, address] = accounts[0].split(':');
+    const chainId = `${namespace}:${chainRef}`;
+    const network =
+      Object.values(STANDARD_NETWORKS).find((n) => n.walletConnectId === chainId) ??
+      this.currentAccount.network;
+
+    const networkChanged = network.id !== this.currentAccount.network.id;
+    const addressChanged = address !== this.currentAccount.address;
+    if (!networkChanged && !addressChanged) return;
+
+    logger.info(`Joey session updated: chain ${chainId}, account ${address}`);
+    this.currentAccount = { address, network };
+
+    if (networkChanged) {
+      this.emit('networkChanged', this.currentAccount);
+    }
+    if (addressChanged) {
       this.emit('accountChanged', this.currentAccount);
     }
   }

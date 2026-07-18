@@ -425,4 +425,53 @@ describe('JoeyAdapter.disconnect', () => {
     expect(onDisconnect).toHaveBeenCalled();
     expect(await adapter.getAccount()).toBeNull();
   });
+
+  it('resyncs the connected account and emits networkChanged when the wallet switches network in-session', async () => {
+    mockRawProvider.session = {
+      topic: 'topic-1',
+      namespaces: { xrpl: { accounts: ['xrpl:1:rTestnetAddress'] } },
+    };
+    mockWcProviderInstance.generateConnectionDetails.mockResolvedValue({
+      data: { uri: 'wc:example', deeplink: 'joey://settings/wc?uri=wc:example' },
+      error: null,
+    });
+
+    let sessionUpdateHandler: (() => void) | undefined;
+    mockRawProvider.on.mockImplementation((event: string, cb: (...args: unknown[]) => void) => {
+      if (event === 'connect') cb();
+      if (event === 'session_update') sessionUpdateHandler = cb;
+    });
+
+    const adapter = new JoeyAdapter({ projectId: 'test-project-id' });
+    const onNetworkChanged = vi.fn();
+    const onAccountChanged = vi.fn();
+    adapter.on('networkChanged', onNetworkChanged);
+    adapter.on('accountChanged', onAccountChanged);
+
+    const account = await adapter.connect({ network: 'testnet' });
+    expect(account.network.id).toBe('testnet');
+
+    expect(sessionUpdateHandler).toBeDefined();
+    // The user switches Joey to mainnet without disconnecting - the
+    // underlying session's namespaces update in place.
+    mockRawProvider.session = {
+      topic: 'topic-1',
+      namespaces: { xrpl: { accounts: ['xrpl:0:rMainnetAfterSwitch'] } },
+    };
+    sessionUpdateHandler?.();
+
+    expect(onNetworkChanged).toHaveBeenCalledWith(
+      expect.objectContaining({
+        address: 'rMainnetAfterSwitch',
+        network: expect.objectContaining({ id: 'mainnet' }),
+      })
+    );
+    expect(onAccountChanged).toHaveBeenCalledWith(
+      expect.objectContaining({ address: 'rMainnetAfterSwitch' })
+    );
+
+    const updatedAccount = await adapter.getAccount();
+    expect(updatedAccount?.address).toBe('rMainnetAfterSwitch');
+    expect(updatedAccount?.network.id).toBe('mainnet');
+  });
 });
